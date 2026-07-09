@@ -1,0 +1,325 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>원장 전수조사 — 규칙을 정말 다 지켰나 (이 열람실의 근거)</title>
+<style>
+:root { --bg:#faf9f7; --fg:#1a1a1a; --muted:#666; --card:#fff; --line:#e2ddd5;
+  --pass:#1a7f4e; --kill:#b3382c; --mid:#a07d1c; --inc:#667; }
+@media (prefers-color-scheme: dark) { :root { --bg:#16181d; --fg:#e8e6e3; --muted:#9a9a9a;
+  --card:#1f2229; --line:#33363e; --pass:#4cc38a; --kill:#e5675a; --mid:#d4b04a; --inc:#8b93a7; } }
+:root[data-theme="dark"] { --bg:#16181d; --fg:#e8e6e3; --muted:#9a9a9a; --card:#1f2229; --line:#33363e;
+  --pass:#4cc38a; --kill:#e5675a; --mid:#d4b04a; --inc:#8b93a7; }
+:root[data-theme="light"] { --bg:#faf9f7; --fg:#1a1a1a; --muted:#666; --card:#fff; --line:#e2ddd5;
+  --pass:#1a7f4e; --kill:#b3382c; --mid:#a07d1c; --inc:#667; }
+body { background:var(--bg); color:var(--fg); font-family:system-ui,'Noto Sans KR',sans-serif;
+  line-height:1.65; max-width:860px; margin:0 auto; padding:2rem 1.2rem 4rem; }
+h1 { font-size:1.7rem; line-height:1.3; } h2 { font-size:1.12rem; margin:0; }
+.lead { font-size:1.02rem; }
+.howto { background:var(--card); border:1.5px solid var(--line); border-radius:12px; padding:1rem 1.2rem; margin:1.4rem 0; }
+.stats { display:flex; flex-wrap:wrap; gap:.6rem; margin:1.2rem 0; }
+.stat { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:.5rem .9rem;
+  display:flex; flex-direction:column; align-items:center; min-width:4.4rem; }
+.stat b { font-size:1.25rem; } .stat span { font-size:.74rem; color:var(--muted); }
+.card { background:var(--card); border:1px solid var(--line); border-left:5px solid var(--inc);
+  border-radius:12px; padding:1rem 1.2rem; margin:1.1rem 0; }
+.card.s-PASS { border-left-color:var(--pass); } .card.s-KILL { border-left-color:var(--kill); }
+.card.s-WEAK, .card.s-PARTIAL, .card.s-MIXED { border-left-color:var(--mid); }
+.card header { display:flex; justify-content:space-between; gap:.8rem; flex-wrap:wrap; align-items:center; }
+.badge { font-size:.8rem; color:var(--muted); margin:.2rem 0 0; }
+.chip { font-size:.95rem; font-weight:800; white-space:nowrap; padding:.28rem .8rem; border-radius:999px; color:#fff; }
+.chip-pass { background:var(--pass); } .chip-kill { background:var(--kill); }
+.chip-mid { background:var(--mid); } .chip-inc { background:var(--inc); }
+.v-pass { color:var(--pass); } .v-kill { color:var(--kill); } .v-mid { color:var(--mid); } .v-inc { color:var(--inc); }
+.promise, .result { border:1px dashed var(--line); border-radius:8px; padding:.55rem .8rem; margin:.5rem 0; font-size:.95rem; }
+.result { border-style:solid; border-width:1.5px; }
+.result.r-pass { border-color:var(--pass); } .result.r-kill { border-color:var(--kill); }
+.result.r-mid { border-color:var(--mid); } .result.r-inc { border-color:var(--inc); }
+.verdictbar { display:flex; gap:.6rem; flex-wrap:wrap; margin:1rem 0 0; }
+.verdictbar .chip { font-size:1rem; }
+.legend { font-size:.85rem; margin-top:.6rem; color:var(--muted); }
+.process { background:var(--card); border:1.5px solid var(--line); border-radius:12px; padding:1rem 1.2rem; margin:1.4rem 0 0; }
+.process p { font-size:.92rem; margin:.5rem 0 0; }
+.psteps { display:flex; gap:.45rem; flex-wrap:wrap; align-items:center; margin-top:.6rem; }
+.pstep { background:var(--bg); border:1.5px solid var(--line); border-radius:999px; padding:.3rem .75rem; font-size:.88rem; font-weight:600; }
+.parrow { color:var(--muted); font-weight:700; }
+.spotlight { border:2px solid var(--mid); border-radius:12px; padding:1rem 1.2rem; margin:1.1rem 0 0;
+  background:color-mix(in srgb, var(--mid) 8%, var(--card)); }
+.spotlight b { font-size:1.05rem; } .spotlight p { margin:.5rem 0 0; font-size:.95rem; }
+.card.selfcaught { box-shadow:0 0 0 2px var(--mid); }
+.card.selfcaught h2::after { content:" 🪞"; }
+.selfnote { font-size:.88rem; background:color-mix(in srgb, var(--mid) 9%, transparent);
+  border-radius:8px; padding:.5rem .8rem; margin:.5rem 0; }
+.selfnote ul { margin:.3rem 0 0; padding-left:1.1rem; } .selfnote li { font-size:.78rem; color:var(--muted); }
+.seal { display:block; font-family:ui-monospace,monospace; font-size:.72rem; color:var(--muted); margin-top:.3rem; }
+.ask b { font-weight:700; }
+.sbar { margin:.9rem 0 .3rem; }
+.track { position:relative; height:14px; border-radius:999px; margin:1.6rem .5rem .6rem;
+  background:linear-gradient(90deg, color-mix(in srgb, var(--kill) 22%, var(--bg)), color-mix(in srgb, var(--mid) 22%, var(--bg)), color-mix(in srgb, var(--pass) 26%, var(--bg))); }
+.track.lowgood { background:linear-gradient(90deg, color-mix(in srgb, var(--pass) 26%, var(--bg)), color-mix(in srgb, var(--mid) 22%, var(--bg)), color-mix(in srgb, var(--kill) 22%, var(--bg))); }
+.dot { position:absolute; top:50%; width:16px; height:16px; border-radius:50%;
+  transform:translate(-50%,-50%); border:2.5px solid var(--card); box-shadow:0 0 0 1px var(--line); }
+.dot-main { background:var(--fg); width:19px; height:19px; z-index:3; }
+.dot-ref { background:var(--muted); z-index:2; }
+.dot-chance { background:var(--bg); border-color:var(--muted); z-index:1; }
+.goal { position:absolute; top:-9px; bottom:-9px; width:0; border-left:2.5px dashed var(--fg); opacity:.65; }
+.goallabel { position:absolute; top:-1.55rem; transform:translateX(-50%); font-size:.74rem; color:var(--muted); white-space:nowrap; }
+.sblegend { display:flex; gap:.9rem; flex-wrap:wrap; font-size:.85rem; }
+.sblegend .lg i { display:inline-block; width:.75em; height:.75em; border-radius:50%; margin-right:.3em; }
+.lg-main i { background:var(--fg); } .lg-ref i { background:var(--muted); }
+.lg-chance i { background:var(--bg); border:1.5px solid var(--muted); }
+.lg b { font-size:1.05rem; }
+.extra { font-size:.84rem; color:var(--muted); margin:.4rem 0 0; }
+.retract { border:2px solid var(--kill); border-radius:10px; padding:.7rem .9rem; margin:.6rem 0;
+  background:color-mix(in srgb, var(--kill) 8%, transparent); font-size:.92rem; }
+.stiles { display:flex; flex-wrap:wrap; gap:.6rem; margin:.8rem 0 .2rem; }
+.stile { background:var(--bg); border:1px solid var(--line); border-radius:10px; padding:.55rem .8rem;
+  display:flex; flex-direction:column; min-width:5rem; }
+.stile b { font-size:1.35rem; font-variant-numeric:tabular-nums; } .stile span { font-size:.74rem; color:var(--muted); }
+.tamper { border:2px solid var(--line); border-radius:12px; padding:1rem 1.2rem; margin:1.4rem 0 0; background:var(--card); }
+.trow { display:flex; gap:.75rem; align-items:center; flex-wrap:wrap; padding:.4rem 0; border-bottom:1px dashed var(--line); font-size:.9rem; }
+.tno { font-weight:800; min-width:1.1rem; } .tts { color:var(--muted); font-size:.8rem; min-width:5.2rem; }
+.trow input { width:4.6rem; font-size:.95rem; padding:.15rem .35rem; border:1.5px solid var(--line);
+  border-radius:6px; background:var(--bg); color:var(--fg); font-weight:700; }
+.tseal { font-size:.72rem; color:var(--muted); }
+.tst.ok { color:var(--pass); font-weight:700; } .tst.bad { color:var(--kill); font-weight:700; }
+.tsum { margin-top:.7rem; padding:.6rem .8rem; border-radius:8px; font-size:.92rem; }
+.tsum.ok { background:color-mix(in srgb, var(--pass) 10%, transparent); }
+.tsum.bad { background:color-mix(in srgb, var(--kill) 10%, transparent); font-weight:600; }
+#tamper-reset { margin-top:.6rem; padding:.35rem .9rem; border-radius:8px; border:1px solid var(--line);
+  background:var(--bg); color:var(--fg); cursor:pointer; }
+details { margin-top:.6rem; font-size:.8rem; } summary { cursor:pointer; color:var(--muted); }
+pre { overflow-x:auto; background:var(--bg); border:1px solid var(--line); border-radius:8px; padding:.7rem; font-size:.72rem; }
+footer { margin-top:2.4rem; font-size:.85rem; color:var(--muted); border-top:1px solid var(--line); padding-top:1rem; }
+.ok { color:var(--pass); } .fail { color:var(--kill); }
+.backnav { font-size:.9rem; margin-bottom:1rem; display:inline-block; }
+.arccard { display:block; background:var(--card); border:1px solid var(--line); border-radius:12px;
+  padding:1rem 1.2rem; margin:1rem 0; color:inherit; text-decoration:none; }
+.arccard:hover { border-color:var(--muted); }
+.arccard h2 { margin-bottom:.3rem; } .arccard p { margin:.4rem 0; font-size:.93rem; }
+.arcmeta { font-size:.8rem; color:var(--muted); }
+a { color:inherit; }
+</style>
+
+<a class="backnav" href="index.html">← 전체 아크 목록</a>
+<h1>원장 전수조사 — 규칙을 정말 다 지켰나 (이 열람실의 근거)</h1>
+<p class="lead">이 프로젝트의 모든 실험 기록(원장 54개, 891줄)을 처음부터 끝까지 기계로 전수조사한 기록입니다(2026-07-09 시점 스냅샷). 확인하려던 것은 하나 — '실험 전에 실패 조건을 봉인한다'는 규칙이 기록에 실제로 지켜졌는가? 결과: 사전등록 266건 전부가 실패 조건 필드를 갖고 있었고(빠진 것 0건), 깨진 줄 0건, 그리고 철회(자기 주장 취소) 31건이 지워지지 않고 그대로 남아 있었습니다. 같은 조사를 두 번 돌려 완전히 같은 숫자가 나오는 것(재현성)까지 확인했습니다. 다만 이 조사가 확인하는 것은 '실패조건 필드가 있느냐'까지이지, 그 조건이 의미 있게 설계됐는지는 아닙니다 — 그 한계도 함께 밝힙니다.</p>
+<div class="verdictbar"><b style="align-self:center">최종 결론:</b><span class="chip chip-pass">실패조건 필드 보유 — 266/266 전부</span><span class="chip chip-pass">재현성(2회 동일) — 확인됨</span><span class="chip chip-pass">철회 기록 보존 — 31건 남아있음</span></div>
+<div class="process"><b>이 조사의 규칙 — 조사 자체도 검증 가능하게</b>
+<div class="psteps"><span class="pstep">🔏 ① 조사 방법을 먼저 봉인</span><span class="parrow">→</span><span class="pstep">🧪 ② 원장 54개 기계 전수조사</span><span class="parrow">→</span><span class="pstep">📋 ③ 숫자 그대로 기록(날짜 명기)</span><span class="parrow">→</span><span class="pstep">🔁 ④ 두 번 돌려 같은지 확인</span></div>
+<p>핵심은 조사 자체도 조작 불가능하게 만든 것입니다. 조사 프로그램과 원본 데이터의 지문(SHA256)을 봉인하고, 두 번 돌려 완전히 같은 결과가 나오는지 확인했습니다. 숫자는 계속 늘어나므로 스냅샷 날짜를 함께 적습니다.</p></div>
+<div class="spotlight"><b>🪞 이 기록의 하이라이트 — 철회 31건이 살아 있다는 것</b>
+<p>가장 중요한 숫자는 '철회 31건'입니다. 연구자가 한 번 주장했다가 틀렸다고 거둬들인 기록이 31개 있고, 그것들이 삭제되지 않고 원장에 그대로 남아 있다는 뜻입니다. 보통은 틀린 주장을 조용히 지우고 싶어 하죠. 이 시스템에서는 그게 불가능하고, 이 전수조사가 그 31건을 세어서 증명합니다. 다만 정직하게 덧붙이면 — 이 조사는 '실패조건 필드가 존재하는가'와 '기록이 깨지지 않았는가'를 확인하는 것이지, 각 실패조건이 실험을 진짜로 반증할 만큼 잘 설계됐는지까지 검사하지는 않습니다. 그건 사람이 각 기록을 읽어야 압니다.</p><p class="extra">이 아크는 정답률이 아니라 전수조사 집계라서 점수 막대 대신 숫자를 그대로 보여줍니다.</p></div>
+<div class="howto">
+<b>읽는 법 — 이 기록에서 "실패"의 의미</b><br>
+여기서 <b style="color:var(--kill)">실패(KILL)</b>는 프로젝트가 망했다는 뜻이 아닙니다.
+연구자가 <b>실험 전에 스스로 봉인한 약속</b>("이 조건이면 내 가설을 폐기한다")대로 가설을 죽였다는 표시입니다.
+각 항목은 해시로 사슬처럼 묶여 있어(아래 seal 값) 나중에 순서를 바꾸거나 몰래 고칠 수 없고,
+실패·철회 기록도 지울 수 없습니다. <b>실패 기록이 남아 있다는 것 자체가 이 기록이 정직하다는 증거입니다.</b>
+<div class="legend">판정 색: <span class="v-pass"><b>🟢 성공</b></span> = 미리 건 합격선 통과 ·
+<span class="v-kill"><b>🔴 실패</b></span> = 미리 건 실패 조건 발동(가설 폐기) ·
+<span class="v-mid"><b>🟡 부분</b></span> = 반쪽 결과 ·
+<span class="v-inc"><b>⚪ 판정 불가</b></span> = 시험 자체가 무효(우기지 않고 무효 선언) ·
+<span class="v-inc"><b>⚫ 효과 없음</b></span> = "효과가 없다"는 것 자체를 확정한 결과</div>
+<div class="legend">이 아크는 정답률 실험이 아니라 원장 전수조사입니다(2026-07-09 스냅샷). 아래 결과 칸의 숫자들이 조사 결과이며, 모두 원장에서 자동 집계됩니다.</div>
+</div>
+
+<div class="tamper">
+<b>🔨 직접 해보세요 — 이 기록, 몰래 고칠 수 있을까?</b>
+<p>아래가 실제 봉인 원본입니다. 재현성 합격선(100점)을 몰래 낮춰보세요 — 완벽 재현이 아니어도 통과시키려는 시도입니다.</p>
+<div id="tamper-rows"></div>
+<div id="tamper-verdict" class="tsum ok"></div>
+<button id="tamper-reset">전부 원래대로</button>
+<p class="extra">참고: 이 원장은 해시 사슬로 묶여 있으며(다음 봉인이 이전 지문을 물고 있음), 외부 비트코인 앵커에는 아직 미포함 — 그 사실도 숨기지 않고 표기합니다.</p>
+<script type="application/json" id="tamper-data">{"cfg": {"field": "pass_threshold", "label": "재현성 합격선", "suffix": "점", "mode": "pct", "prompt": "아래가 실제 봉인 원본입니다. 재현성 합격선(100점)을 몰래 낮춰보세요 — 완벽 재현이 아니어도 통과시키려는 시도입니다."}, "rows": [{"i": 1, "ts": "07-02 22:50", "body": "{\"baseline\": 0.0, \"claim_id\": \"dogam_ledger_census_v1\", \"kill_condition\": \"도감 2c 구조 센서스. 프로토콜=ledger_census.py SHA256 bf3657f38d1162f1b529d9ec86ad8b87764d59496d49f000c4542488ae88c7b4 (결정론적·구조만 카운트, 해석 없음). 대상=/data/seara/mirror_ledgers/*.jsonl 실행시점 스냅샷(출력의 data_sha256이 데이터 지문). KILL: ①같은 data_sha256에서 재실행 결과 불일치(비결정성) ②발화한 수치가 스크립트 출력과 불일치(전사 오류) ③스크립트를 결과 확인 후 침묵 수정(수정은 amendment로만). 이 센서스는 기술통계이며 가설검정 아님 — 어떤 효과 주장도 하지 않음.\", \"kill_threshold\": {\"kill\": \"recount_mismatch_or_transcription_error\", \"protocol_sha256\": \"bf3657f38d1162f1b529d9ec86ad8b87764d59496d49f000c4542488ae88c7b4\", \"type\": \"descriptive_census\"}, \"metric\": \"census_reproducibility\", \"metric_range\": \"unbounded\", \"min_n\": 1, \"pass_threshold\": 1.0, \"prev_seal\": \"genesis\", \"ts\": \"2026-07-02T22:50:29\"}", "seal": "f7fd1cda3e39cf9b", "value_display": 100, "value_repr": "1.0"}]}</script>
+<script>/* 조작 체험 위젯 — 브라우저에서 진짜 SHA-256으로 봉인을 재계산한다.
+   TAMPER_DATA: build.py가 원장에서 추출·검증해 심은 실제 봉인 9장.
+   (crypto.subtle은 http LAN에서 막히므로 순수 JS SHA-256 구현 사용) */
+(function () {
+  "use strict";
+  var K = [
+    0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,
+    0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3, 0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174,
+    0xe49b69c1, 0xefbe4786, 0x0fc19dc6, 0x240ca1cc, 0x2de92c6f, 0x4a7484aa, 0x5cb0a9dc, 0x76f988da,
+    0x983e5152, 0xa831c66d, 0xb00327c8, 0xbf597fc7, 0xc6e00bf3, 0xd5a79147, 0x06ca6351, 0x14292967,
+    0x27b70a85, 0x2e1b2138, 0x4d2c6dfc, 0x53380d13, 0x650a7354, 0x766a0abb, 0x81c2c92e, 0x92722c85,
+    0xa2bfe8a1, 0xa81a664b, 0xc24b8b70, 0xc76c51a3, 0xd192e819, 0xd6990624, 0xf40e3585, 0x106aa070,
+    0x19a4c116, 0x1e376c08, 0x2748774c, 0x34b0bcb5, 0x391c0cb3, 0x4ed8aa4a, 0x5b9cca4f, 0x682e6ff3,
+    0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208, 0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2];
+
+  function sha256hex(str) {
+    var enc = new TextEncoder().encode(str);
+    var l = enc.length;
+    var blocks = Math.ceil((l + 9) / 64);
+    var m = new Uint8Array(blocks * 64);
+    m.set(enc);
+    m[l] = 0x80;
+    var dv = new DataView(m.buffer);
+    var bitLen = l * 8;
+    dv.setUint32(m.length - 8, Math.floor(bitLen / 4294967296));
+    dv.setUint32(m.length - 4, bitLen >>> 0);
+    var H = [0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a, 0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19];
+    var w = new Int32Array(64);
+    function rotr(x, n) { return (x >>> n) | (x << (32 - n)); }
+    for (var i = 0; i < m.length; i += 64) {
+      for (var t = 0; t < 16; t++) w[t] = dv.getUint32(i + t * 4);
+      for (t = 16; t < 64; t++) {
+        var s0 = rotr(w[t - 15], 7) ^ rotr(w[t - 15], 18) ^ (w[t - 15] >>> 3);
+        var s1 = rotr(w[t - 2], 17) ^ rotr(w[t - 2], 19) ^ (w[t - 2] >>> 10);
+        w[t] = (w[t - 16] + s0 + w[t - 7] + s1) | 0;
+      }
+      var a = H[0], b = H[1], c = H[2], d = H[3], e = H[4], f = H[5], g = H[6], h = H[7];
+      for (t = 0; t < 64; t++) {
+        var S1 = rotr(e, 6) ^ rotr(e, 11) ^ rotr(e, 25);
+        var ch = (e & f) ^ (~e & g);
+        var t1 = (h + S1 + ch + K[t] + w[t]) | 0;
+        var S0 = rotr(a, 2) ^ rotr(a, 13) ^ rotr(a, 22);
+        var maj = (a & b) ^ (a & c) ^ (b & c);
+        var t2 = (S0 + maj) | 0;
+        h = g; g = f; f = e; e = (d + t1) | 0; d = c; c = b; b = a; a = (t1 + t2) | 0;
+      }
+      H[0] = (H[0] + a) | 0; H[1] = (H[1] + b) | 0; H[2] = (H[2] + c) | 0; H[3] = (H[3] + d) | 0;
+      H[4] = (H[4] + e) | 0; H[5] = (H[5] + f) | 0; H[6] = (H[6] + g) | 0; H[7] = (H[7] + h) | 0;
+    }
+    var out = "";
+    for (i = 0; i < 8; i++) out += (H[i] >>> 0).toString(16).padStart(8, "0");
+    return out;
+  }
+
+  if (typeof module !== "undefined") { module.exports = { sha256hex: sha256hex }; return; }
+
+  var packed = JSON.parse(document.getElementById("tamper-data").textContent);
+  var cfg = packed.cfg;
+  var data = packed.rows;
+  var rowsEl = document.getElementById("tamper-rows");
+  var verdictEl = document.getElementById("tamper-verdict");
+
+  function fmtRaw(v) {  // 입력값 → 원장 표기 (pct: 47→"0.47" / int: "12")
+    return cfg.mode === "pct" ? String(Math.round(v) / 100) : String(Math.round(v));
+  }
+
+  function render() {
+    data.forEach(function (e, idx) {
+      var row = document.createElement("div");
+      row.className = "trow";
+      row.innerHTML =
+        '<span class="tno">' + e.i + '</span><span class="tts">' + e.ts + ' 봉인</span>' +
+        '<label>' + cfg.label + ' <input type="number" min="0" value="' + e.value_display + '">' + cfg.suffix + '</label>' +
+        '<code class="tseal">' + e.seal + '</code><span class="tst ok">✅ 봉인 일치</span>';
+      var input = row.querySelector("input");
+      var st = row.querySelector(".tst");
+      input.addEventListener("input", function () {
+        var body = e.body.replace('"' + cfg.field + '": ' + e.value_repr,
+                                  '"' + cfg.field + '": ' + fmtRaw(input.value));
+        var seal = sha256hex(body).slice(0, 16);
+        var ok = seal === e.seal;
+        st.className = "tst " + (ok ? "ok" : "bad");
+        st.textContent = ok ? "✅ 봉인 일치" : "❌ 지문 불일치 → " + seal.slice(0, 8) + "…";
+        e._bad = !ok;
+        summary();
+      });
+      rowsEl.appendChild(row);
+      e._input = input; e._st = st;
+    });
+    document.getElementById("tamper-reset").addEventListener("click", function () {
+      data.forEach(function (e) {
+        e._input.value = e.value_display; e._bad = false;
+        e._st.className = "tst ok"; e._st.textContent = "✅ 봉인 일치";
+      });
+      summary();
+    });
+  }
+
+  function summary() {
+    var bad = data.filter(function (e) { return e._bad; }).length;
+    if (!bad) {
+      verdictEl.className = "tsum ok";
+      verdictEl.textContent = "현재 조작 없음 — " + data.length + "장 전부 봉인과 일치합니다. (이 검사는 흉내가 아니라, 지금 이 브라우저에서 실제 SHA-256 지문을 다시 계산한 결과입니다)";
+    } else {
+      verdictEl.className = "tsum bad";
+      verdictEl.textContent = "🚨 조작 " + bad + "건 감지! 내용을 고치는 순간 지문이 달라져 봉인과 어긋납니다. " +
+        "지문을 새로 맞춰 적으려 해도 다음 봉인이 이전 지문을 물고 있어(사슬) 이후 봉인 전부를 다시 써야 하고, " +
+        "사슬의 끝은 외부 증인에 박제됩니다(아래 참고). 되돌리는 방법은 원래 값으로 복원하는 것뿐 — 그래서 이 기록은 믿을 수 있습니다.";
+    }
+  }
+
+  render();
+  summary();
+})();
+</script>
+</div>
+<div class="stats"><div class="stat"><b>1</b><span>봉인</span></div><div class="stat"><b>2</b><span>실행 판정</span></div><div class="stat"><b>1</b><span>성공</span></div></div>
+
+<article class="card s-PASS">
+  <header><h2>원장 전수조사 — 규칙을 정말 다 지켰나? (2026-07-09)</h2><span class="chip chip-pass">🟢 성공</span></header>
+  <p class="badge">🟢 통과 (재현성 2회 동일)</p>
+  <p class="ask"><b>무엇을 물었나</b> — 이 프로젝트의 모든 원장(54개 파일·891줄)을 기계로 전수조사해서, ①사전등록마다 실패 조건 필드가 있는지 ②깨진 기록은 없는지 ③철회가 몇 건인지 집계. 같은 조사를 두 번 돌려 결과가 같은지(재현성)까지 확인.</p>
+  <div class="promise"><b>🔏 22:50 실험 전 봉인한 약속</b><br>두 번 돌린 결과가 완전히 똑같아야(재현성 100%) 통과. 조사 방법과 데이터의 지문을 미리 봉인.
+    <span class="seal">seal f7fd1cda3e39cf9b</span></div>
+  <div class="result r-pass"><b>📋 10:11 결과 — <span class="v-pass">🟢 성공</span></b><br>통과 — 두 번 조사 결과가 완전히 동일. 집계(2026-07-09): 원장 54개·891줄, 깨진 줄 0개, 사전등록 266건 전부 실패조건 필드 보유(없는 것 0건), 철회 31건 보존. 단 이 조사의 범위는 '필드 존재·기록 무결'까지이고, 실패조건의 설계 품질은 검증하지 않습니다.
+    <span class="seal">seal 7ca28ed0d551832f</span></div>
+  
+  
+  
+  <div class="stiles"><div class="stile"><b data-src="act:dogam_ledger_census_v1:results.ledger_files:0">54</b><span>조사한 원장 파일개</span></div><div class="stile"><b data-src="act:dogam_ledger_census_v1:results.lines_total:0">891</b><span>전체 줄 수줄</span></div><div class="stile"><b data-src="act:dogam_ledger_census_v1:results.malformed_lines:0">0</b><span>깨진 줄개</span></div><div class="stile"><b data-src="act:dogam_ledger_census_v1:results.preregister_with_kill:0">266</b><span>실패조건 필드 있는 사전등록건</span></div><div class="stile"><b data-src="act:dogam_ledger_census_v1:results.preregister_without_kill:0">0</b><span>실패조건 필드 없는 사전등록건</span></div><div class="stile"><b data-src="act:dogam_ledger_census_v1:results.counts_by_type.retraction:0">31</b><span>보존된 철회건</span></div></div>
+  <details><summary>봉인 원문 보기 (요약이 아닌 실제 기록)</summary>
+    <pre>{
+ "ts": "2026-07-02T22:50:29",
+ "claim_id": "dogam_ledger_census_v1",
+ "metric": "census_reproducibility",
+ "min_n": 1,
+ "baseline": 0.0,
+ "pass_threshold": 1.0,
+ "prev_seal": "genesis",
+ "kill_condition": "도감 2c 구조 센서스. 프로토콜=ledger_census.py SHA256 bf3657f38d1162f1b529d9ec86ad8b87764d59496d49f000c4542488ae88c7b4 (결정론적·구조만 카운트, 해석 없음). 대상=/data/seara/mirror_ledgers/*.jsonl 실행시점 스냅샷(출력의 data_sha256이 데이터 지문). KILL: ①같은 data_sha256에서 재실행 결과 불일치(비결정성) ②발화한 수치가 스크립트 출력과 불일치(전사 오류) ③스크립트를 결과 확인 후 침묵 수정(수정은 amendment로만). 이 센서스는 기술통계이며 가설검정 아님 — 어떤 효과 주장도 하지 않음.",
+ "kill_threshold": {
+  "protocol_sha256": "bf3657f38d1162f1b529d9ec86ad8b87764d59496d49f000c4542488ae88c7b4",
+  "kill": "recount_mismatch_or_transcription_error",
+  "type": "descriptive_census"
+ },
+ "metric_range": "unbounded",
+ "seal": "f7fd1cda3e39cf9b"
+}</pre><pre>{
+ "_type": "action",
+ "ts": "2026-07-09T01:11:03Z",
+ "agent": "claude-selfgen-lane",
+ "action": "dogam 원장 전수조사 재실행(공개뷰어 stale 스냅샷 교정, 2026-07-09 스냅샷). 동일 스크립트 ledger_census.py 재실행, 2회 결정론 재현 확인. 갱신값: 원장 54파일·891줄·사전등록 266(전부 kill조건·without_kill 0 유지)·철회 31 보존·malformed 0·unknown 6(_type 미분류 줄, 무해). verdict=PASS(재현성 2회 동일). ★scope 정직화: 이 조사는 사전등록에 kill_threshold '필드가 존재'함과 타입 집계만 확인 — kill 조건이 의미있게 설계됐는지는 검증 안 함(구조 확인이지 내용 검증 아님).",
+ "target": "dogam_ledger_census_v1",
+ "payload": {
+  "verdict": "PASS",
+  "snapshot_date": "2026-07-09",
+  "reproducibility": "2_runs_identical",
+  "results": {
+   "ledger_files": 54,
+   "lines_total": 891,
+   "malformed_lines": 0,
+   "preregister_with_kill": 266,
+   "preregister_without_kill": 0,
+   "counts_by_type": {
+    "action": 576,
+    "amendment": 3,
+    "distribution": 2,
+    "peer_witness": 7,
+    "preregister": 266,
+    "retraction": 31,
+    "unknown": 6
+   }
+  },
+  "data_sha256": "a880dfa10662eeba32f297846c26245229b370fa347e16dbb04bceeeb8f9a5f9",
+  "scope_note": "confirms kill_threshold FIELD presence + type counts only, NOT whether kill conditions are meaningfully designed",
+  "supersedes_snapshot": "2026-07-02"
+ },
+ "prev_seal": "9cc064adb4ac3982",
+ "seal": "7ca28ed0d551832f"
+}</pre></details>
+</article>
+<footer>
+<p><b>이 페이지의 검증 상태</b> (빌드 시 자동 검사)</p>
+<ul>
+<li>해시체인 연속성 (사전봉인 원장): <span class="ok">✅ 1개 항목 연쇄 무결 (genesis→f7fd1cda3e39cf9b)</span></li>
+<li>봉인 재계산 (SPEC §4, 체험 위젯과 동일 공식): <span class="ok">✅ 1/1 일치</span></li>
+<li>수치 무결성 (페이지의 모든 숫자 ↔ 원장 재계산, G2): <span class="ok">✅ 6/6 일치</span></li>
+<li>외부 앵커: 이 아크 원장은 해시 사슬로 묶여 있으나 아직 외부(비트코인) 앵커 매니페스트에는 미포함 — 다음 일일 앵커에 포함 예정. 미포함 사실도 그대로 표기합니다.</li>
+<li>해설(내레이션)은 원문이 아니라 요약이며, 요약 파일의 지문(SHA256 <code>706cad6f766d10dd…</code>)이
+원장에 봉인됩니다. 요약이 원문과 다른 판정을 말하면 빌드가 실패하도록 강제돼 있습니다.</li>
+</ul>
+<p>생성: build.py · 원장 원본: dogam_census.jsonl + dogam_census_action.jsonl (mirror_ledgers)</p>
+</footer>

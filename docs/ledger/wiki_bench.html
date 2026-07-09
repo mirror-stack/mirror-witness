@@ -1,0 +1,325 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>위키 검색 도구 효율 실험 — 정말 토큰을 아껴줄까</title>
+<style>
+:root { --bg:#faf9f7; --fg:#1a1a1a; --muted:#666; --card:#fff; --line:#e2ddd5;
+  --pass:#1a7f4e; --kill:#b3382c; --mid:#a07d1c; --inc:#667; }
+@media (prefers-color-scheme: dark) { :root { --bg:#16181d; --fg:#e8e6e3; --muted:#9a9a9a;
+  --card:#1f2229; --line:#33363e; --pass:#4cc38a; --kill:#e5675a; --mid:#d4b04a; --inc:#8b93a7; } }
+:root[data-theme="dark"] { --bg:#16181d; --fg:#e8e6e3; --muted:#9a9a9a; --card:#1f2229; --line:#33363e;
+  --pass:#4cc38a; --kill:#e5675a; --mid:#d4b04a; --inc:#8b93a7; }
+:root[data-theme="light"] { --bg:#faf9f7; --fg:#1a1a1a; --muted:#666; --card:#fff; --line:#e2ddd5;
+  --pass:#1a7f4e; --kill:#b3382c; --mid:#a07d1c; --inc:#667; }
+body { background:var(--bg); color:var(--fg); font-family:system-ui,'Noto Sans KR',sans-serif;
+  line-height:1.65; max-width:860px; margin:0 auto; padding:2rem 1.2rem 4rem; }
+h1 { font-size:1.7rem; line-height:1.3; } h2 { font-size:1.12rem; margin:0; }
+.lead { font-size:1.02rem; }
+.howto { background:var(--card); border:1.5px solid var(--line); border-radius:12px; padding:1rem 1.2rem; margin:1.4rem 0; }
+.stats { display:flex; flex-wrap:wrap; gap:.6rem; margin:1.2rem 0; }
+.stat { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:.5rem .9rem;
+  display:flex; flex-direction:column; align-items:center; min-width:4.4rem; }
+.stat b { font-size:1.25rem; } .stat span { font-size:.74rem; color:var(--muted); }
+.card { background:var(--card); border:1px solid var(--line); border-left:5px solid var(--inc);
+  border-radius:12px; padding:1rem 1.2rem; margin:1.1rem 0; }
+.card.s-PASS { border-left-color:var(--pass); } .card.s-KILL { border-left-color:var(--kill); }
+.card.s-WEAK, .card.s-PARTIAL, .card.s-MIXED { border-left-color:var(--mid); }
+.card header { display:flex; justify-content:space-between; gap:.8rem; flex-wrap:wrap; align-items:center; }
+.badge { font-size:.8rem; color:var(--muted); margin:.2rem 0 0; }
+.chip { font-size:.95rem; font-weight:800; white-space:nowrap; padding:.28rem .8rem; border-radius:999px; color:#fff; }
+.chip-pass { background:var(--pass); } .chip-kill { background:var(--kill); }
+.chip-mid { background:var(--mid); } .chip-inc { background:var(--inc); }
+.v-pass { color:var(--pass); } .v-kill { color:var(--kill); } .v-mid { color:var(--mid); } .v-inc { color:var(--inc); }
+.promise, .result { border:1px dashed var(--line); border-radius:8px; padding:.55rem .8rem; margin:.5rem 0; font-size:.95rem; }
+.result { border-style:solid; border-width:1.5px; }
+.result.r-pass { border-color:var(--pass); } .result.r-kill { border-color:var(--kill); }
+.result.r-mid { border-color:var(--mid); } .result.r-inc { border-color:var(--inc); }
+.verdictbar { display:flex; gap:.6rem; flex-wrap:wrap; margin:1rem 0 0; }
+.verdictbar .chip { font-size:1rem; }
+.legend { font-size:.85rem; margin-top:.6rem; color:var(--muted); }
+.process { background:var(--card); border:1.5px solid var(--line); border-radius:12px; padding:1rem 1.2rem; margin:1.4rem 0 0; }
+.process p { font-size:.92rem; margin:.5rem 0 0; }
+.psteps { display:flex; gap:.45rem; flex-wrap:wrap; align-items:center; margin-top:.6rem; }
+.pstep { background:var(--bg); border:1.5px solid var(--line); border-radius:999px; padding:.3rem .75rem; font-size:.88rem; font-weight:600; }
+.parrow { color:var(--muted); font-weight:700; }
+.spotlight { border:2px solid var(--mid); border-radius:12px; padding:1rem 1.2rem; margin:1.1rem 0 0;
+  background:color-mix(in srgb, var(--mid) 8%, var(--card)); }
+.spotlight b { font-size:1.05rem; } .spotlight p { margin:.5rem 0 0; font-size:.95rem; }
+.card.selfcaught { box-shadow:0 0 0 2px var(--mid); }
+.card.selfcaught h2::after { content:" 🪞"; }
+.selfnote { font-size:.88rem; background:color-mix(in srgb, var(--mid) 9%, transparent);
+  border-radius:8px; padding:.5rem .8rem; margin:.5rem 0; }
+.selfnote ul { margin:.3rem 0 0; padding-left:1.1rem; } .selfnote li { font-size:.78rem; color:var(--muted); }
+.seal { display:block; font-family:ui-monospace,monospace; font-size:.72rem; color:var(--muted); margin-top:.3rem; }
+.ask b { font-weight:700; }
+.sbar { margin:.9rem 0 .3rem; }
+.track { position:relative; height:14px; border-radius:999px; margin:1.6rem .5rem .6rem;
+  background:linear-gradient(90deg, color-mix(in srgb, var(--kill) 22%, var(--bg)), color-mix(in srgb, var(--mid) 22%, var(--bg)), color-mix(in srgb, var(--pass) 26%, var(--bg))); }
+.track.lowgood { background:linear-gradient(90deg, color-mix(in srgb, var(--pass) 26%, var(--bg)), color-mix(in srgb, var(--mid) 22%, var(--bg)), color-mix(in srgb, var(--kill) 22%, var(--bg))); }
+.dot { position:absolute; top:50%; width:16px; height:16px; border-radius:50%;
+  transform:translate(-50%,-50%); border:2.5px solid var(--card); box-shadow:0 0 0 1px var(--line); }
+.dot-main { background:var(--fg); width:19px; height:19px; z-index:3; }
+.dot-ref { background:var(--muted); z-index:2; }
+.dot-chance { background:var(--bg); border-color:var(--muted); z-index:1; }
+.goal { position:absolute; top:-9px; bottom:-9px; width:0; border-left:2.5px dashed var(--fg); opacity:.65; }
+.goallabel { position:absolute; top:-1.55rem; transform:translateX(-50%); font-size:.74rem; color:var(--muted); white-space:nowrap; }
+.sblegend { display:flex; gap:.9rem; flex-wrap:wrap; font-size:.85rem; }
+.sblegend .lg i { display:inline-block; width:.75em; height:.75em; border-radius:50%; margin-right:.3em; }
+.lg-main i { background:var(--fg); } .lg-ref i { background:var(--muted); }
+.lg-chance i { background:var(--bg); border:1.5px solid var(--muted); }
+.lg b { font-size:1.05rem; }
+.extra { font-size:.84rem; color:var(--muted); margin:.4rem 0 0; }
+.retract { border:2px solid var(--kill); border-radius:10px; padding:.7rem .9rem; margin:.6rem 0;
+  background:color-mix(in srgb, var(--kill) 8%, transparent); font-size:.92rem; }
+.stiles { display:flex; flex-wrap:wrap; gap:.6rem; margin:.8rem 0 .2rem; }
+.stile { background:var(--bg); border:1px solid var(--line); border-radius:10px; padding:.55rem .8rem;
+  display:flex; flex-direction:column; min-width:5rem; }
+.stile b { font-size:1.35rem; font-variant-numeric:tabular-nums; } .stile span { font-size:.74rem; color:var(--muted); }
+.tamper { border:2px solid var(--line); border-radius:12px; padding:1rem 1.2rem; margin:1.4rem 0 0; background:var(--card); }
+.trow { display:flex; gap:.75rem; align-items:center; flex-wrap:wrap; padding:.4rem 0; border-bottom:1px dashed var(--line); font-size:.9rem; }
+.tno { font-weight:800; min-width:1.1rem; } .tts { color:var(--muted); font-size:.8rem; min-width:5.2rem; }
+.trow input { width:4.6rem; font-size:.95rem; padding:.15rem .35rem; border:1.5px solid var(--line);
+  border-radius:6px; background:var(--bg); color:var(--fg); font-weight:700; }
+.tseal { font-size:.72rem; color:var(--muted); }
+.tst.ok { color:var(--pass); font-weight:700; } .tst.bad { color:var(--kill); font-weight:700; }
+.tsum { margin-top:.7rem; padding:.6rem .8rem; border-radius:8px; font-size:.92rem; }
+.tsum.ok { background:color-mix(in srgb, var(--pass) 10%, transparent); }
+.tsum.bad { background:color-mix(in srgb, var(--kill) 10%, transparent); font-weight:600; }
+#tamper-reset { margin-top:.6rem; padding:.35rem .9rem; border-radius:8px; border:1px solid var(--line);
+  background:var(--bg); color:var(--fg); cursor:pointer; }
+details { margin-top:.6rem; font-size:.8rem; } summary { cursor:pointer; color:var(--muted); }
+pre { overflow-x:auto; background:var(--bg); border:1px solid var(--line); border-radius:8px; padding:.7rem; font-size:.72rem; }
+footer { margin-top:2.4rem; font-size:.85rem; color:var(--muted); border-top:1px solid var(--line); padding-top:1rem; }
+.ok { color:var(--pass); } .fail { color:var(--kill); }
+.backnav { font-size:.9rem; margin-bottom:1rem; display:inline-block; }
+.arccard { display:block; background:var(--card); border:1px solid var(--line); border-radius:12px;
+  padding:1rem 1.2rem; margin:1rem 0; color:inherit; text-decoration:none; }
+.arccard:hover { border-color:var(--muted); }
+.arccard h2 { margin-bottom:.3rem; } .arccard p { margin:.4rem 0; font-size:.93rem; }
+.arcmeta { font-size:.8rem; color:var(--muted); }
+a { color:inherit; }
+</style>
+
+<a class="backnav" href="index.html">← 전체 아크 목록</a>
+<h1>위키 검색 도구 효율 실험 — 정말 토큰을 아껴줄까</h1>
+<p class="lead">직접 만든 위키 검색 도구가 정말 비용(토큰)을 아껴주는지 실험했습니다. 같은 질문 10개를 ①새 도구로 ②기존 방식으로 각각 풀게 하고, 토큰을 얼마나 아꼈는지 쟀죠. 목표는 '30% 이상 절감'이었는데 실제로는 20%에 그쳤습니다. 그래서 미리 봉인한 실패 조건대로 자기 도구를 KILL했습니다 — 정확도는 떨어지지 않았지만, '아꼈다고 부를 만큼'은 아니라고 정직하게 인정한 겁니다.</p>
+<div class="verdictbar"><b style="align-self:center">최종 결론:</b><span class="chip chip-kill">토큰 30% 절감 목표 — 실패 (20%에 그침)</span><span class="chip chip-pass">정확도 유지 — 확인됨</span></div>
+<div class="process"><b>이 연구의 규칙 — 실험이 이 순서를 지켰습니다</b>
+<div class="psteps"><span class="pstep">🔏 ① 합격선(30% 절감)을 먼저 봉인</span><span class="parrow">→</span><span class="pstep">🧪 ② 새 도구 vs 기존 방식 실험</span><span class="parrow">→</span><span class="pstep">📋 ③ 결과를 그대로 기록</span><span class="parrow">→</span><span class="pstep">🔁 ④ 두 시드 반복</span></div>
+<p>핵심은 순서입니다. '몇 % 아껴야 성공인지'를 결과 보기 전에 30%로 봉인했습니다. 그래서 20%라는 어중간한 결과가 나왔을 때 '그래도 아꼈으니 성공'이라고 기준을 낮출 수 없었습니다.</p></div>
+<div class="spotlight"><b>🪞 이 기록의 하이라이트 — 자기가 만든 도구를 스스로 탈락시킨 순간</b>
+<p>직접 공들여 만든 검색 도구입니다. 토큰을 20% 아꼈고 정확도도 안 떨어졌으니 '개선 성공'이라 발표하고 싶은 결과였죠. 하지만 미리 건 합격선이 30%였고 20%는 거기 못 미쳤습니다. 연구자는 애착 있는 자기 도구를 봉인한 기준대로 KILL했습니다. 게다가 기존 방식의 토큰 편차가 워낙 커서(2.9만~5.4만) 20%라는 숫자조차 못 믿겠다는 점, 질문 하나(q8)가 설계 결함이었다는 점까지 스스로 적어, 결과를 좋게도 나쁘게도 부풀리지 않았습니다.</p><p class="extra">이 페이지의 점수 막대는 토큰 절감률입니다 — 높을수록(오른쪽) 좋습니다.</p></div>
+<div class="howto">
+<b>읽는 법 — 이 기록에서 "실패"의 의미</b><br>
+여기서 <b style="color:var(--kill)">실패(KILL)</b>는 프로젝트가 망했다는 뜻이 아닙니다.
+연구자가 <b>실험 전에 스스로 봉인한 약속</b>("이 조건이면 내 가설을 폐기한다")대로 가설을 죽였다는 표시입니다.
+각 항목은 해시로 사슬처럼 묶여 있어(아래 seal 값) 나중에 순서를 바꾸거나 몰래 고칠 수 없고,
+실패·철회 기록도 지울 수 없습니다. <b>실패 기록이 남아 있다는 것 자체가 이 기록이 정직하다는 증거입니다.</b>
+<div class="legend">판정 색: <span class="v-pass"><b>🟢 성공</b></span> = 미리 건 합격선 통과 ·
+<span class="v-kill"><b>🔴 실패</b></span> = 미리 건 실패 조건 발동(가설 폐기) ·
+<span class="v-mid"><b>🟡 부분</b></span> = 반쪽 결과 ·
+<span class="v-inc"><b>⚪ 판정 불가</b></span> = 시험 자체가 무효(우기지 않고 무효 선언) ·
+<span class="v-inc"><b>⚫ 효과 없음</b></span> = "효과가 없다"는 것 자체를 확정한 결과</div>
+<div class="legend">점수 보는 법: 막대는 새 도구가 아낀 토큰 비율입니다. ●이 실제 절감률, 세로 점선이 실험 전에 봉인한 합격선(30점). 점이 점선보다 왼쪽 = 합격선 미달 = 실패.</div>
+</div>
+
+<div class="tamper">
+<b>🔨 직접 해보세요 — 이 기록, 몰래 고칠 수 있을까?</b>
+<p>아래가 실제 봉인 원본입니다. 실험 전에 봉인한 절감 목표(30점)를 몰래 낮춰 결과를 통과시켜보세요.</p>
+<div id="tamper-rows"></div>
+<div id="tamper-verdict" class="tsum ok"></div>
+<button id="tamper-reset">전부 원래대로</button>
+<p class="extra">참고: 이 원장은 해시 사슬로 묶여 있으며(다음 봉인이 이전 지문을 물고 있음), 외부 비트코인 앵커에는 아직 미포함 — 그 사실도 숨기지 않고 표기합니다.</p>
+<script type="application/json" id="tamper-data">{"cfg": {"field": "pass_threshold", "label": "합격선(절감률)", "suffix": "점", "mode": "pct", "prompt": "아래가 실제 봉인 원본입니다. 실험 전에 봉인한 절감 목표(30점)를 몰래 낮춰 결과를 통과시켜보세요."}, "rows": [{"i": 1, "ts": "06-21 07:35", "body": "{\"baseline\": 0.0, \"claim_id\": \"wiki_retrieval_efficiency_20260621\", \"kill_condition\": \"protocol_sha256=ff91368ea43b312e94fd32a6bf00ef080867bb9035db14cddf4af848187540ea. KILL if token_reduction_ratio < 0.30 (AFTER not >=30% cheaper) OR AFTER accuracy < BEFORE accuracy. n=10 questions, descriptive/underpowered (report effect size + per-question raw, not p-values).\", \"kill_threshold\": {\"accuracy_no_regression\": true, \"n\": 10, \"protocol_sha256\": \"ff91368ea43b312e94fd32a6bf00ef080867bb9035db14cddf4af848187540ea\", \"token_reduction_ratio_min\": 0.3}, \"metric\": \"token_reduction_ratio = 1 - (AFTER_median_tokens / BEFORE_median_tokens); secondary=accuracy\", \"min_n\": 10, \"pass_threshold\": 0.3, \"prev_seal\": \"genesis\", \"ts\": \"2026-06-21T07:35:58\"}", "seal": "592a9f906a2dd114", "value_display": 30, "value_repr": "0.3"}]}</script>
+<script>/* 조작 체험 위젯 — 브라우저에서 진짜 SHA-256으로 봉인을 재계산한다.
+   TAMPER_DATA: build.py가 원장에서 추출·검증해 심은 실제 봉인 9장.
+   (crypto.subtle은 http LAN에서 막히므로 순수 JS SHA-256 구현 사용) */
+(function () {
+  "use strict";
+  var K = [
+    0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,
+    0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3, 0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174,
+    0xe49b69c1, 0xefbe4786, 0x0fc19dc6, 0x240ca1cc, 0x2de92c6f, 0x4a7484aa, 0x5cb0a9dc, 0x76f988da,
+    0x983e5152, 0xa831c66d, 0xb00327c8, 0xbf597fc7, 0xc6e00bf3, 0xd5a79147, 0x06ca6351, 0x14292967,
+    0x27b70a85, 0x2e1b2138, 0x4d2c6dfc, 0x53380d13, 0x650a7354, 0x766a0abb, 0x81c2c92e, 0x92722c85,
+    0xa2bfe8a1, 0xa81a664b, 0xc24b8b70, 0xc76c51a3, 0xd192e819, 0xd6990624, 0xf40e3585, 0x106aa070,
+    0x19a4c116, 0x1e376c08, 0x2748774c, 0x34b0bcb5, 0x391c0cb3, 0x4ed8aa4a, 0x5b9cca4f, 0x682e6ff3,
+    0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208, 0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2];
+
+  function sha256hex(str) {
+    var enc = new TextEncoder().encode(str);
+    var l = enc.length;
+    var blocks = Math.ceil((l + 9) / 64);
+    var m = new Uint8Array(blocks * 64);
+    m.set(enc);
+    m[l] = 0x80;
+    var dv = new DataView(m.buffer);
+    var bitLen = l * 8;
+    dv.setUint32(m.length - 8, Math.floor(bitLen / 4294967296));
+    dv.setUint32(m.length - 4, bitLen >>> 0);
+    var H = [0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a, 0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19];
+    var w = new Int32Array(64);
+    function rotr(x, n) { return (x >>> n) | (x << (32 - n)); }
+    for (var i = 0; i < m.length; i += 64) {
+      for (var t = 0; t < 16; t++) w[t] = dv.getUint32(i + t * 4);
+      for (t = 16; t < 64; t++) {
+        var s0 = rotr(w[t - 15], 7) ^ rotr(w[t - 15], 18) ^ (w[t - 15] >>> 3);
+        var s1 = rotr(w[t - 2], 17) ^ rotr(w[t - 2], 19) ^ (w[t - 2] >>> 10);
+        w[t] = (w[t - 16] + s0 + w[t - 7] + s1) | 0;
+      }
+      var a = H[0], b = H[1], c = H[2], d = H[3], e = H[4], f = H[5], g = H[6], h = H[7];
+      for (t = 0; t < 64; t++) {
+        var S1 = rotr(e, 6) ^ rotr(e, 11) ^ rotr(e, 25);
+        var ch = (e & f) ^ (~e & g);
+        var t1 = (h + S1 + ch + K[t] + w[t]) | 0;
+        var S0 = rotr(a, 2) ^ rotr(a, 13) ^ rotr(a, 22);
+        var maj = (a & b) ^ (a & c) ^ (b & c);
+        var t2 = (S0 + maj) | 0;
+        h = g; g = f; f = e; e = (d + t1) | 0; d = c; c = b; b = a; a = (t1 + t2) | 0;
+      }
+      H[0] = (H[0] + a) | 0; H[1] = (H[1] + b) | 0; H[2] = (H[2] + c) | 0; H[3] = (H[3] + d) | 0;
+      H[4] = (H[4] + e) | 0; H[5] = (H[5] + f) | 0; H[6] = (H[6] + g) | 0; H[7] = (H[7] + h) | 0;
+    }
+    var out = "";
+    for (i = 0; i < 8; i++) out += (H[i] >>> 0).toString(16).padStart(8, "0");
+    return out;
+  }
+
+  if (typeof module !== "undefined") { module.exports = { sha256hex: sha256hex }; return; }
+
+  var packed = JSON.parse(document.getElementById("tamper-data").textContent);
+  var cfg = packed.cfg;
+  var data = packed.rows;
+  var rowsEl = document.getElementById("tamper-rows");
+  var verdictEl = document.getElementById("tamper-verdict");
+
+  function fmtRaw(v) {  // 입력값 → 원장 표기 (pct: 47→"0.47" / int: "12")
+    return cfg.mode === "pct" ? String(Math.round(v) / 100) : String(Math.round(v));
+  }
+
+  function render() {
+    data.forEach(function (e, idx) {
+      var row = document.createElement("div");
+      row.className = "trow";
+      row.innerHTML =
+        '<span class="tno">' + e.i + '</span><span class="tts">' + e.ts + ' 봉인</span>' +
+        '<label>' + cfg.label + ' <input type="number" min="0" value="' + e.value_display + '">' + cfg.suffix + '</label>' +
+        '<code class="tseal">' + e.seal + '</code><span class="tst ok">✅ 봉인 일치</span>';
+      var input = row.querySelector("input");
+      var st = row.querySelector(".tst");
+      input.addEventListener("input", function () {
+        var body = e.body.replace('"' + cfg.field + '": ' + e.value_repr,
+                                  '"' + cfg.field + '": ' + fmtRaw(input.value));
+        var seal = sha256hex(body).slice(0, 16);
+        var ok = seal === e.seal;
+        st.className = "tst " + (ok ? "ok" : "bad");
+        st.textContent = ok ? "✅ 봉인 일치" : "❌ 지문 불일치 → " + seal.slice(0, 8) + "…";
+        e._bad = !ok;
+        summary();
+      });
+      rowsEl.appendChild(row);
+      e._input = input; e._st = st;
+    });
+    document.getElementById("tamper-reset").addEventListener("click", function () {
+      data.forEach(function (e) {
+        e._input.value = e.value_display; e._bad = false;
+        e._st.className = "tst ok"; e._st.textContent = "✅ 봉인 일치";
+      });
+      summary();
+    });
+  }
+
+  function summary() {
+    var bad = data.filter(function (e) { return e._bad; }).length;
+    if (!bad) {
+      verdictEl.className = "tsum ok";
+      verdictEl.textContent = "현재 조작 없음 — " + data.length + "장 전부 봉인과 일치합니다. (이 검사는 흉내가 아니라, 지금 이 브라우저에서 실제 SHA-256 지문을 다시 계산한 결과입니다)";
+    } else {
+      verdictEl.className = "tsum bad";
+      verdictEl.textContent = "🚨 조작 " + bad + "건 감지! 내용을 고치는 순간 지문이 달라져 봉인과 어긋납니다. " +
+        "지문을 새로 맞춰 적으려 해도 다음 봉인이 이전 지문을 물고 있어(사슬) 이후 봉인 전부를 다시 써야 하고, " +
+        "사슬의 끝은 외부 증인에 박제됩니다(아래 참고). 되돌리는 방법은 원래 값으로 복원하는 것뿐 — 그래서 이 기록은 믿을 수 있습니다.";
+    }
+  }
+
+  render();
+  summary();
+})();
+</script>
+</div>
+<div class="stats"><div class="stat"><b>1</b><span>봉인</span></div><div class="stat"><b>2</b><span>실행 판정</span></div><div class="stat"><b>1</b><span>실패(KILL)</span></div></div>
+
+<article class="card s-KILL">
+  <header><h2>위키 검색 도구 — 정말 토큰을 아껴주나?</h2><span class="chip chip-kill">🔴 실패</span></header>
+  <p class="badge">🔴 실패(KILL)·🔓 철회로 봉인 — 정확도는 유지</p>
+  <p class="ask"><b>무엇을 물었나</b> — 같은 질문 10개를 ①새로 만든 위키 검색 도구 ②기존 방식으로 각각 풀게 하고, 새 도구가 토큰(비용)을 얼마나 아끼는지 측정. 정확도도 함께 확인.</p>
+  <div class="promise"><b>🔏 07:35 실험 전 봉인한 약속</b><br>토큰을 30% 이상 못 아끼거나, 정확도가 기존보다 떨어지면 도구를 KILL한다.
+    <span class="seal">seal 592a9f906a2dd114</span></div>
+  <div class="result r-kill"><b>📋 07:43 결과 — <span class="v-kill">🔴 실패</span></b><br>토큰 절감 20% — 미리 건 합격선 30%에 못 미쳐 KILL. 정확도는 유지됐습니다(새 도구 9~10문제 정답 vs 기존 8~9문제, 나빠지지 않음). 다만 기존 방식의 토큰 편차가 커서(2.9만~5.4만) 이 20%조차 확신하기 어렵다는 점, 검증 범위가 '키워드 찾기'에 한정됐다는 점을 함께 기록했습니다. 이 가설은 자기가 건 실패 조건에 걸려 철회(retraction)로 봉인됐고, 그 철회 기록도 지워지지 않습니다.
+    <span class="seal">seal c3c7424d25b09764</span></div>
+  <div class="retract"><b>🔓 이 가설은 철회(retraction)로 봉인되었습니다</b><br>Falsified by own preregistered kill: token_reduction_ratio=0.20 &lt; 0.30. grep on raw markdown is already cheap for distinctive-keyword lookup; the catalog/query layer did NOT cut tokens (AFTER median 33.4k vs BEFORE 41.8k, within BEFORE's 29-54k variance) and used equal/more tool calls. NOTE residual UNTESTED signal: descriptions improved disambiguation accuracy (AFTER 9,10 vs BEFORE 9,8; q8 description resolved a 2-file ambiguity) — refile as a NEW hypothesis for triage/overview tasks, not claimed here.<br><span class="extra">철회란 연구자가 자기 주장을 스스로 거둬들인 것입니다. 이 철회 기록도 삭제되지 않고 원장에 영구히 남습니다 — 그것이 이 시스템의 핵심입니다.</span></div>
+  
+  <div class="sbar"><div class="track"><i class="goal" style="left:30%"></i><span class="goallabel" style="left:30%">합격선 <b data-src="prereg:wiki_retrieval_efficiency_20260621:pass_threshold:pct">30</b>점</span><i class="dot dot-main" style="left:20%"></i></div><div class="sblegend"><span class="lg lg-main"><i></i>실제 토큰 절감률 (20점) <b data-src="act:wiki_retrieval_efficiency_20260621:token_reduction_ratio:pct">20</b>점</span></div></div>
+  
+  <details><summary>봉인 원문 보기 (요약이 아닌 실제 기록)</summary>
+    <pre>{
+ "ts": "2026-06-21T07:35:58",
+ "claim_id": "wiki_retrieval_efficiency_20260621",
+ "metric": "token_reduction_ratio = 1 - (AFTER_median_tokens / BEFORE_median_tokens); secondary=accuracy",
+ "min_n": 10,
+ "baseline": 0.0,
+ "pass_threshold": 0.3,
+ "prev_seal": "genesis",
+ "kill_condition": "protocol_sha256=ff91368ea43b312e94fd32a6bf00ef080867bb9035db14cddf4af848187540ea. KILL if token_reduction_ratio &lt; 0.30 (AFTER not &gt;=30% cheaper) OR AFTER accuracy &lt; BEFORE accuracy. n=10 questions, descriptive/underpowered (report effect size + per-question raw, not p-values).",
+ "kill_threshold": {
+  "token_reduction_ratio_min": 0.3,
+  "accuracy_no_regression": true,
+  "protocol_sha256": "ff91368ea43b312e94fd32a6bf00ef080867bb9035db14cddf4af848187540ea",
+  "n": 10
+ },
+ "seal": "592a9f906a2dd114"
+}</pre><pre>{
+ "_type": "action",
+ "ts": "2026-06-20T22:43:17Z",
+ "agent": "claude-opus-4-8",
+ "action": "RESULT wiki_bench A/B: token_reduction_ratio=0.20 (&lt;0.30 threshold) → KILL. AFTER tokens [32294,34526] median 33410; BEFORE [54253,29291] median 41772. Correct/10 per seed: AFTER [9,10], BEFORE [9,8]. Scope=keyword-lookup only (NOT triage/overview/status). q8 ambiguous(2 files). falsifiability_check tool errored; trip reasoned 0.20&lt;0.30. stack_verify_all=ALL OK.",
+ "target": "wiki_retrieval_efficiency_20260621",
+ "payload": {
+  "verdict": "KILL",
+  "token_reduction_ratio": 0.2,
+  "after_tokens": [
+   32294,
+   34526
+  ],
+  "before_tokens": [
+   54253,
+   29291
+  ],
+  "after_correct_of_10": [
+   9,
+   10
+  ],
+  "before_correct_of_10": [
+   9,
+   8
+  ],
+  "scope_tested": "keyword-lookup retrieval",
+  "scope_not_tested": "triage/overview/multi-constraint/status-aware",
+  "caveats": "n small, BEFORE token variance high (29k-54k), q8 ambiguous design flaw",
+  "results_file": "/data/seara/mirror_ledgers/wiki_bench_results.json"
+ },
+ "prev_seal": "9031c883b2375c7a",
+ "seal": "c3c7424d25b09764"
+}</pre></details>
+</article>
+<footer>
+<p><b>이 페이지의 검증 상태</b> (빌드 시 자동 검사)</p>
+<ul>
+<li>해시체인 연속성 (사전봉인 원장): <span class="ok">✅ 2개 항목 연쇄 무결 (genesis→0f3f841f35eaef9c)</span></li>
+<li>봉인 재계산 (SPEC §4, 체험 위젯과 동일 공식): <span class="ok">✅ 1/1 일치</span></li>
+<li>수치 무결성 (페이지의 모든 숫자 ↔ 원장 재계산, G2): <span class="ok">✅ 2/2 일치</span></li>
+<li>외부 앵커: 이 아크 원장은 해시 사슬로 묶여 있으나 아직 외부(비트코인) 앵커 매니페스트에는 미포함 — 다음 일일 앵커에 포함 예정. 미포함 사실도 그대로 표기합니다.</li>
+<li>해설(내레이션)은 원문이 아니라 요약이며, 요약 파일의 지문(SHA256 <code>a6de8ee852bbd94d…</code>)이
+원장에 봉인됩니다. 요약이 원문과 다른 판정을 말하면 빌드가 실패하도록 강제돼 있습니다.</li>
+</ul>
+<p>생성: build.py · 원장 원본: wiki_bench.jsonl + wiki_bench_actions.jsonl (mirror_ledgers)</p>
+</footer>

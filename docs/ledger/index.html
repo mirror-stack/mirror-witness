@@ -1,0 +1,132 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>봉인 실험 기록 열람실</title>
+<style>
+:root { --bg:#faf9f7; --fg:#1a1a1a; --muted:#666; --card:#fff; --line:#e2ddd5;
+  --pass:#1a7f4e; --kill:#b3382c; --mid:#a07d1c; --inc:#667; }
+@media (prefers-color-scheme: dark) { :root { --bg:#16181d; --fg:#e8e6e3; --muted:#9a9a9a;
+  --card:#1f2229; --line:#33363e; --pass:#4cc38a; --kill:#e5675a; --mid:#d4b04a; --inc:#8b93a7; } }
+:root[data-theme="dark"] { --bg:#16181d; --fg:#e8e6e3; --muted:#9a9a9a; --card:#1f2229; --line:#33363e;
+  --pass:#4cc38a; --kill:#e5675a; --mid:#d4b04a; --inc:#8b93a7; }
+:root[data-theme="light"] { --bg:#faf9f7; --fg:#1a1a1a; --muted:#666; --card:#fff; --line:#e2ddd5;
+  --pass:#1a7f4e; --kill:#b3382c; --mid:#a07d1c; --inc:#667; }
+body { background:var(--bg); color:var(--fg); font-family:system-ui,'Noto Sans KR',sans-serif;
+  line-height:1.65; max-width:860px; margin:0 auto; padding:2rem 1.2rem 4rem; }
+h1 { font-size:1.7rem; line-height:1.3; } h2 { font-size:1.12rem; margin:0; }
+.lead { font-size:1.02rem; }
+.howto { background:var(--card); border:1.5px solid var(--line); border-radius:12px; padding:1rem 1.2rem; margin:1.4rem 0; }
+.stats { display:flex; flex-wrap:wrap; gap:.6rem; margin:1.2rem 0; }
+.stat { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:.5rem .9rem;
+  display:flex; flex-direction:column; align-items:center; min-width:4.4rem; }
+.stat b { font-size:1.25rem; } .stat span { font-size:.74rem; color:var(--muted); }
+.card { background:var(--card); border:1px solid var(--line); border-left:5px solid var(--inc);
+  border-radius:12px; padding:1rem 1.2rem; margin:1.1rem 0; }
+.card.s-PASS { border-left-color:var(--pass); } .card.s-KILL { border-left-color:var(--kill); }
+.card.s-WEAK, .card.s-PARTIAL, .card.s-MIXED { border-left-color:var(--mid); }
+.card header { display:flex; justify-content:space-between; gap:.8rem; flex-wrap:wrap; align-items:center; }
+.badge { font-size:.8rem; color:var(--muted); margin:.2rem 0 0; }
+.chip { font-size:.95rem; font-weight:800; white-space:nowrap; padding:.28rem .8rem; border-radius:999px; color:#fff; }
+.chip-pass { background:var(--pass); } .chip-kill { background:var(--kill); }
+.chip-mid { background:var(--mid); } .chip-inc { background:var(--inc); }
+.v-pass { color:var(--pass); } .v-kill { color:var(--kill); } .v-mid { color:var(--mid); } .v-inc { color:var(--inc); }
+.promise, .result { border:1px dashed var(--line); border-radius:8px; padding:.55rem .8rem; margin:.5rem 0; font-size:.95rem; }
+.result { border-style:solid; border-width:1.5px; }
+.result.r-pass { border-color:var(--pass); } .result.r-kill { border-color:var(--kill); }
+.result.r-mid { border-color:var(--mid); } .result.r-inc { border-color:var(--inc); }
+.verdictbar { display:flex; gap:.6rem; flex-wrap:wrap; margin:1rem 0 0; }
+.verdictbar .chip { font-size:1rem; }
+.legend { font-size:.85rem; margin-top:.6rem; color:var(--muted); }
+.process { background:var(--card); border:1.5px solid var(--line); border-radius:12px; padding:1rem 1.2rem; margin:1.4rem 0 0; }
+.process p { font-size:.92rem; margin:.5rem 0 0; }
+.psteps { display:flex; gap:.45rem; flex-wrap:wrap; align-items:center; margin-top:.6rem; }
+.pstep { background:var(--bg); border:1.5px solid var(--line); border-radius:999px; padding:.3rem .75rem; font-size:.88rem; font-weight:600; }
+.parrow { color:var(--muted); font-weight:700; }
+.spotlight { border:2px solid var(--mid); border-radius:12px; padding:1rem 1.2rem; margin:1.1rem 0 0;
+  background:color-mix(in srgb, var(--mid) 8%, var(--card)); }
+.spotlight b { font-size:1.05rem; } .spotlight p { margin:.5rem 0 0; font-size:.95rem; }
+.card.selfcaught { box-shadow:0 0 0 2px var(--mid); }
+.card.selfcaught h2::after { content:" 🪞"; }
+.selfnote { font-size:.88rem; background:color-mix(in srgb, var(--mid) 9%, transparent);
+  border-radius:8px; padding:.5rem .8rem; margin:.5rem 0; }
+.selfnote ul { margin:.3rem 0 0; padding-left:1.1rem; } .selfnote li { font-size:.78rem; color:var(--muted); }
+.seal { display:block; font-family:ui-monospace,monospace; font-size:.72rem; color:var(--muted); margin-top:.3rem; }
+.ask b { font-weight:700; }
+.sbar { margin:.9rem 0 .3rem; }
+.track { position:relative; height:14px; border-radius:999px; margin:1.6rem .5rem .6rem;
+  background:linear-gradient(90deg, color-mix(in srgb, var(--kill) 22%, var(--bg)), color-mix(in srgb, var(--mid) 22%, var(--bg)), color-mix(in srgb, var(--pass) 26%, var(--bg))); }
+.track.lowgood { background:linear-gradient(90deg, color-mix(in srgb, var(--pass) 26%, var(--bg)), color-mix(in srgb, var(--mid) 22%, var(--bg)), color-mix(in srgb, var(--kill) 22%, var(--bg))); }
+.dot { position:absolute; top:50%; width:16px; height:16px; border-radius:50%;
+  transform:translate(-50%,-50%); border:2.5px solid var(--card); box-shadow:0 0 0 1px var(--line); }
+.dot-main { background:var(--fg); width:19px; height:19px; z-index:3; }
+.dot-ref { background:var(--muted); z-index:2; }
+.dot-chance { background:var(--bg); border-color:var(--muted); z-index:1; }
+.goal { position:absolute; top:-9px; bottom:-9px; width:0; border-left:2.5px dashed var(--fg); opacity:.65; }
+.goallabel { position:absolute; top:-1.55rem; transform:translateX(-50%); font-size:.74rem; color:var(--muted); white-space:nowrap; }
+.sblegend { display:flex; gap:.9rem; flex-wrap:wrap; font-size:.85rem; }
+.sblegend .lg i { display:inline-block; width:.75em; height:.75em; border-radius:50%; margin-right:.3em; }
+.lg-main i { background:var(--fg); } .lg-ref i { background:var(--muted); }
+.lg-chance i { background:var(--bg); border:1.5px solid var(--muted); }
+.lg b { font-size:1.05rem; }
+.extra { font-size:.84rem; color:var(--muted); margin:.4rem 0 0; }
+.retract { border:2px solid var(--kill); border-radius:10px; padding:.7rem .9rem; margin:.6rem 0;
+  background:color-mix(in srgb, var(--kill) 8%, transparent); font-size:.92rem; }
+.stiles { display:flex; flex-wrap:wrap; gap:.6rem; margin:.8rem 0 .2rem; }
+.stile { background:var(--bg); border:1px solid var(--line); border-radius:10px; padding:.55rem .8rem;
+  display:flex; flex-direction:column; min-width:5rem; }
+.stile b { font-size:1.35rem; font-variant-numeric:tabular-nums; } .stile span { font-size:.74rem; color:var(--muted); }
+.tamper { border:2px solid var(--line); border-radius:12px; padding:1rem 1.2rem; margin:1.4rem 0 0; background:var(--card); }
+.trow { display:flex; gap:.75rem; align-items:center; flex-wrap:wrap; padding:.4rem 0; border-bottom:1px dashed var(--line); font-size:.9rem; }
+.tno { font-weight:800; min-width:1.1rem; } .tts { color:var(--muted); font-size:.8rem; min-width:5.2rem; }
+.trow input { width:4.6rem; font-size:.95rem; padding:.15rem .35rem; border:1.5px solid var(--line);
+  border-radius:6px; background:var(--bg); color:var(--fg); font-weight:700; }
+.tseal { font-size:.72rem; color:var(--muted); }
+.tst.ok { color:var(--pass); font-weight:700; } .tst.bad { color:var(--kill); font-weight:700; }
+.tsum { margin-top:.7rem; padding:.6rem .8rem; border-radius:8px; font-size:.92rem; }
+.tsum.ok { background:color-mix(in srgb, var(--pass) 10%, transparent); }
+.tsum.bad { background:color-mix(in srgb, var(--kill) 10%, transparent); font-weight:600; }
+#tamper-reset { margin-top:.6rem; padding:.35rem .9rem; border-radius:8px; border:1px solid var(--line);
+  background:var(--bg); color:var(--fg); cursor:pointer; }
+details { margin-top:.6rem; font-size:.8rem; } summary { cursor:pointer; color:var(--muted); }
+pre { overflow-x:auto; background:var(--bg); border:1px solid var(--line); border-radius:8px; padding:.7rem; font-size:.72rem; }
+footer { margin-top:2.4rem; font-size:.85rem; color:var(--muted); border-top:1px solid var(--line); padding-top:1rem; }
+.ok { color:var(--pass); } .fail { color:var(--kill); }
+.backnav { font-size:.9rem; margin-bottom:1rem; display:inline-block; }
+.arccard { display:block; background:var(--card); border:1px solid var(--line); border-radius:12px;
+  padding:1rem 1.2rem; margin:1rem 0; color:inherit; text-decoration:none; }
+.arccard:hover { border-color:var(--muted); }
+.arccard h2 { margin-bottom:.3rem; } .arccard p { margin:.4rem 0; font-size:.93rem; }
+.arcmeta { font-size:.8rem; color:var(--muted); }
+a { color:inherit; }
+</style>
+
+<h1>봉인 실험 기록 열람실</h1>
+<p class="lead">여기 있는 기록은 전부 실제 연구 원장에서 자동 생성됩니다. 특징은 하나 —
+<b>실험 전에 "어떤 결과면 실패로 인정한다"를 지울 수 없게 봉인하고 시작하고, 실패·정정·무효 기록도 그대로 남긴다</b>는 것.
+그래서 성공만 골라 보여줄 수 없는 구조입니다. 각 기록 안에서 봉인을 직접 조작해보는 체험도 할 수 있습니다.</p>
+<div class="howto"><b>이 열람실은 공개용 대표 모음입니다.</b> 측정·기록의 정직성을 보여주는 방법론 아크만 골라 실었습니다. 진행 중인 연구 본체는 포함하지 않습니다.</div>
+
+<a class="arccard" href="honesty_injection.html">
+  <h2>정직률 주입 실험 — '정직해져라'는 말은 효과가 있을까</h2>
+  <p>AI에게 "네 정직 점수는 92점"이라고 말해주면 거짓말이 줄어들까? 3연속 실험의 답: 아니오 — 그리고 그 '효과 없음'을 어떻게 정직하게 확정했는가의 기록.</p>
+  <div class="verdictbar"><span class="chip chip-inc">'정직해져라' 주입 — 큰 효과 없음</span><span class="chip chip-pass">점수 압박의 부작용(기권 도피) — 없음</span><span class="chip chip-mid">실제로 일어난 일 — 불확실할 때만 조심</span></div>
+  <p class="arcmeta">2026-07-02~03 · 봉인 4 · 실행 판정 3 · 판정 불가 2 · 효과 없음 1 · 자가적발 1 · 정정 1</p>
+</a>
+<a class="arccard" href="wiki_bench.html">
+  <h2>위키 검색 도구 효율 실험 — 정말 토큰을 아껴줄까</h2>
+  <p>자체 제작한 위키 검색 도구가 정말 토큰을 아껴줄까? 목표 30%인데 실제 20% — 자기가 건 조건에 걸려 KILL, 그리고 철회(retraction)로 봉인된 기록.</p>
+  <div class="verdictbar"><span class="chip chip-kill">토큰 30% 절감 목표 — 실패 (20%에 그침)</span><span class="chip chip-pass">정확도 유지 — 확인됨</span></div>
+  <p class="arcmeta">2026-06-21 · 봉인 1 · 실행 판정 2 · 실패(KILL) 1</p>
+</a>
+<a class="arccard" href="dogam_census.html">
+  <h2>원장 전수조사 — 규칙을 정말 다 지켰나 (이 열람실의 근거)</h2>
+  <p>"실패 조건을 먼저 봉인한다"는 규칙, 정말 매번 지켰을까? 원장 54개를 전수조사한 결과(2026-07-09 스냅샷) — 사전등록 266개 전부 실패조건 필드 있음, 없는 것 0건, 철회 31건도 그대로 보존.</p>
+  <div class="verdictbar"><span class="chip chip-pass">실패조건 필드 보유 — 266/266 전부</span><span class="chip chip-pass">재현성(2회 동일) — 확인됨</span><span class="chip chip-pass">철회 기록 보존 — 31건 남아있음</span></div>
+  <p class="arcmeta">2026-06-30 · 봉인 1 · 실행 판정 2 · 성공 1</p>
+</a>
+<a class="arccard" href="discipline_ab.html">
+  <h2>AI에게 '정직·신중 규율'을 미리 넣으면 결함을 더 잘 잡을까? — 스스로 KILL한 기록</h2>
+  <p>AI에게 '정직·신중 규율'을 미리 넣으면 결함을 더 잘 잡을까? 시험은 성립조차 못 했고(문제가 너무 쉬웠음) — 연구자가 첫 해석을 스스로 과잉이라며 철회한, 자기수정의 기록.</p>
+  <div class="verdictbar"><span class="chip chip-inc">규율이 결함 검출을 높이나 — 검정 불가 (문제가 너무 쉬움)</span><span class="chip chip-mid">첫 해석 '규율=헛경보 늘림' — 연구자가 스스로 철회</span></div>
+  <p class="arcmeta">2026-06-14 · 봉인 2 · 실행 판정 4 · 판정 불가 1 · 정정 1</p>
+</a>
+<footer><p>생성: build.py · 페이지의 모든 숫자는 원장에서 자동 추출·재검증됩니다.</p></footer>
