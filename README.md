@@ -9,6 +9,12 @@ Operators append a *declaration* of their ledger's current head; GitHub provides
 immutable history; CI ([`witness_verify.py`](witness_verify.py)) provides the consistency check
 that GitHub alone cannot.
 
+🔎 **[Sealed-Record Reading Room →](https://bhyi4.github.io/mirror-witness/ledger/)** — a human-readable
+viewer (hosted from this repo's `docs/ledger/`) over actual sealed ledgers: each experiment shows the
+kill-condition sealed *before* the run, the verdict (pass / kill / retracted / inconclusive), and every
+number auto-recomputed from the ledger. Tamper with a sealed value in the browser and watch the hash break.
+Shows the failures and retractions, not just the wins.
+
 Part of the 🪞🔎🪪 [Mirror Stack](https://github.com/bhyi4/measure-mirror/tree/main/stack):
 
 | Tool | Audits | Question |
