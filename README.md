@@ -9,19 +9,19 @@ Operators append a *declaration* of their ledger's current head; GitHub provides
 immutable history; CI ([`witness_verify.py`](witness_verify.py)) provides the consistency check
 that GitHub alone cannot.
 
-🔎 **[Sealed-Record Reading Room →](https://bhyi4.github.io/mirror-witness/ledger/)** — a human-readable
+🔎 **[Sealed-Record Reading Room →](https://mirror-stack.github.io/mirror-witness/ledger/)** — a human-readable
 viewer (hosted from this repo's `docs/ledger/`) over actual sealed ledgers: each experiment shows the
 kill-condition sealed *before* the run, the verdict (pass / kill / retracted / inconclusive), and every
 number auto-recomputed from the ledger. Tamper with a sealed value in the browser and watch the hash break.
 Shows the failures and retractions, not just the wins.
 
-Part of the 🪞🔎🪪 [Mirror Stack](https://github.com/bhyi4/measure-mirror/tree/main/stack):
+Part of the 🪞🔎🪪 [Mirror Stack](https://github.com/mirror-stack/measure-mirror/tree/main/stack):
 
 | Tool | Audits | Question |
 |---|---|---|
-| 🪞 [measure-mirror](https://github.com/bhyi4/measure-mirror) | AI evaluation claims | Is the **claim** honest? |
-| 🪪 [action-mirror](https://github.com/bhyi4/action-mirror) | Agent behaviour | Who did what, **provably**? |
-| 🔎 [provenance-mirror](https://github.com/bhyi4/provenance-mirror) | Content authenticity | Is the **origin** proven? |
+| 🪞 [measure-mirror](https://github.com/mirror-stack/measure-mirror) | AI evaluation claims | Is the **claim** honest? |
+| 🪪 [action-mirror](https://github.com/mirror-stack/action-mirror) | Agent behaviour | Who did what, **provably**? |
+| 🔎 [provenance-mirror](https://github.com/mirror-stack/provenance-mirror) | Content authenticity | Is the **origin** proven? |
 | 👁 **mirror-witness** (you are here) | Cross-operator witness board | **Who else witnessed it?** |
 
 💬 **[Discussions](https://github.com/orgs/mirror-stack/discussions)** — questions · ideas · independent reproductions welcome.
@@ -77,6 +77,6 @@ declaration trips C2.
 ## Current board
 
 Seeded from a real research arc — the four anchors of an agent that
-[retracted its own experiment before spending a token](https://github.com/bhyi4/measure-mirror/blob/main/stack/CASE_STUDY_compute_governor.md),
+[retracted its own experiment before spending a token](https://github.com/mirror-stack/measure-mirror/blob/main/stack/CASE_STUDY_compute_governor.md),
 declared in time order (entry_count 2 → 3 → 4 → 6). This is one operator family — **not yet an
 independent witness network.** That's the whole point of opening it.
