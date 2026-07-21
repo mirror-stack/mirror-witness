@@ -17,8 +17,10 @@ HEADS = Path(__file__).resolve().parent / "ledger_heads"
 
 
 def decl_seal(rec):
+    # Full 64-hex digest (v0.2): 16-hex (64-bit) truncation let a dishonest
+    # declarer birthday-search (~2^32) two declarations sharing one seal.
     body = {k: rec[k] for k in sorted(rec) if k != "decl_seal"}
-    return hashlib.sha256(json.dumps(body, sort_keys=True).encode()).hexdigest()[:16]
+    return hashlib.sha256(json.dumps(body, sort_keys=True).encode()).hexdigest()
 
 
 def main():

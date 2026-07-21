@@ -36,10 +36,25 @@ REQUIRED = {"operator", "ts", "ledger", "entry_count", "head_seal", "prev_decl_s
 OK, FAIL = "✅", "❌"
 
 
+_LEGACY_SEAL_LEN = 16   # pre-v0.2 truncated decl seals — see decl_seal_matches
+
+
 def decl_seal(rec):
-    """Seal of a declaration = hash over its content + prev_decl_seal (chains the board)."""
+    """Seal of a declaration = full SHA-256 over its content + prev_decl_seal.
+
+    v0.2 widened from 16-hex (64-bit) truncation: a dishonest declarer could
+    birthday-search (~2^32) two declarations sharing one seal and swap them.
+    Legacy 16-hex decl seals stay verifiable via decl_seal_matches (prefix)."""
     body = {k: rec[k] for k in sorted(rec) if k != "decl_seal"}
-    return hashlib.sha256(json.dumps(body, sort_keys=True).encode()).hexdigest()[:16]
+    return hashlib.sha256(json.dumps(body, sort_keys=True).encode()).hexdigest()
+
+
+def decl_seal_matches(stored, full_hex):
+    """Full match, or legacy exactly-16-hex prefix match (v0.1 boards)."""
+    stored = str(stored)
+    if stored == full_hex:
+        return True
+    return len(stored) == _LEGACY_SEAL_LEN and stored == full_hex[:_LEGACY_SEAL_LEN]
 
 
 def load(path):
@@ -59,7 +74,7 @@ def verify_file(path, fails):
         if str(r["prev_decl_seal"]) != prev:                                    # C2
             fails.append(f"{FAIL} [C2 decl-chain] {name}#{i}: prev_decl_seal "
                          f"{r['prev_decl_seal']} != {prev}")
-        if decl_seal(r) != r["decl_seal"]:                                      # C2
+        if not decl_seal_matches(r["decl_seal"], decl_seal(r)):                 # C2
             fails.append(f"{FAIL} [C2 decl-chain] {name}#{i}: decl_seal mismatch "
                          f"(recomputed {decl_seal(r)})")
         key = (r["operator"], r["ledger"])
