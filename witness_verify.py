@@ -23,6 +23,8 @@ Honesty: this proves *time-order of declarations*, not that a hidden ledger is i
 That requires the operator to also publish the ledger, or a peer to cross-check it. The hub's
 value is the witness *network*, which is empty until independent operators join.
 """
+
+__version__ = "0.1.0"   # see VERSION / CHANGELOG.md
 import argparse
 import hashlib
 import json

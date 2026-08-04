@@ -7,6 +7,8 @@ Publishes only head + counts (not ledger contents) — privacy-preserving by def
 usage: declare.py --operator NAME --ledger LABEL --head SEAL --entries N [--anchor-hash H] [--ts ISO]
    or: declare.py --operator NAME --from-anchor path/to/anchor.json --ledger LABEL
 """
+
+__version__ = "0.1.0"   # see VERSION / CHANGELOG.md
 import argparse
 import hashlib
 import json

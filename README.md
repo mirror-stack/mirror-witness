@@ -24,6 +24,8 @@ Part of the 🪞🔎🪪 [Mirror Stack](https://github.com/mirror-stack/measure-
 | 🔎 [provenance-mirror](https://github.com/mirror-stack/provenance-mirror) | Content authenticity | Is the **origin** proven? |
 | 👁 **mirror-witness** (you are here) | Cross-operator witness board | **Who else witnessed it?** |
 
+🇰🇷 **[한국어 README →](README_KO.md)**
+
 💬 **[Discussions](https://github.com/orgs/mirror-stack/discussions)** — questions · ideas · independent reproductions welcome.
 
 ## What it proves (and what it doesn't)
@@ -80,3 +82,14 @@ Seeded from a real research arc — the four anchors of an agent that
 [retracted its own experiment before spending a token](https://github.com/mirror-stack/measure-mirror/blob/main/stack/CASE_STUDY_compute_governor.md),
 declared in time order (entry_count 2 → 3 → 4 → 6). This is one operator family — **not yet an
 independent witness network.** That's the whole point of opening it.
+
+## Version
+
+[`VERSION`](VERSION) · [CHANGELOG](CHANGELOG.md). Unlike the other three repos
+this one has **no `pyproject.toml`** — it is not an installable library but a
+board made of two scripts and a CI workflow. Packaging metadata would imply an
+import surface that does not exist.
+
+## License
+
+Apache-2.0 — [LICENSE](LICENSE)
