@@ -1,7 +1,7 @@
 name: witness-verify
 on:
   pull_request:
-    paths: ["ledger_heads/**"]
+    paths: ["ledger_heads/**", "witness_verify.py", "declare.py", "tests/**", ".github/workflows/**"]
   push:
     branches: [main]
 
@@ -23,3 +23,15 @@ jobs:
           else
             python witness_verify.py
           fi
+
+  tests:
+    # The checks above are only as good as the verifier; these tests attack it
+    # (rewound counts, deleted lines, edited or deleted committed files).
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install pytest
+      - run: python -m pytest -v tests

@@ -89,14 +89,28 @@ def verify_file(path, fails):
 
 
 def append_only_vs_base(base, fails):
-    """C4: every committed line of each heads file must survive unchanged in this revision."""
-    for path in sorted(HEADS.glob("*.jsonl")):
-        rel = path.relative_to(HERE)
+    """C4: every committed line of each heads file must survive unchanged in this revision.
+
+    Files are enumerated from the *base* revision as well as the working tree: walking
+    only the current files let a PR delete a whole operator file and pass C4, because a
+    file that no longer exists was never compared."""
+    rel_dir = HEADS.relative_to(HERE).as_posix()
+    listed = subprocess.run(["git", "ls-tree", "--name-only", f"{base}:{rel_dir}"],
+                            capture_output=True, text=True, cwd=HERE)
+    base_files = {n for n in listed.stdout.split() if n.endswith(".jsonl")}
+    names = sorted(base_files | {p.name for p in HEADS.glob("*.jsonl")})
+    for name in names:
+        path = HEADS / name
+        rel = path.relative_to(HERE).as_posix()
         old = subprocess.run(["git", "show", f"{base}:{rel}"],
                              capture_output=True, text=True, cwd=HERE)
         if old.returncode != 0:
             continue  # new file in this PR — fine
         old_lines = [l for l in old.stdout.splitlines() if l.strip()]
+        if not path.exists():
+            fails.append(f"{FAIL} [C4 append-only] {rel}: file deleted "
+                         f"({len(old_lines)} committed declarations removed)")
+            continue
         new_lines = [l for l in path.read_text().splitlines() if l.strip()]
         if new_lines[:len(old_lines)] != old_lines:
             fails.append(f"{FAIL} [C4 append-only] {rel}: existing declarations were "

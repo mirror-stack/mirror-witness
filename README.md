@@ -73,8 +73,9 @@ python declare.py --operator <you> --ledger <label> --from-anchor path/to/anchor
 | **C3 monotonic** | a ledger's `entry_count` never decreases across declarations (clock-rewind) |
 | **C4 append-only** | (PR diff) no previously-committed declaration was modified or deleted — appends only |
 
-Adversarial tests pass: rewinding a past `entry_count` trips C2+C3; deleting a middle
-declaration trips C2.
+Adversarial tests ([`tests/`](tests/test_witness_verify.py), run in CI): rewinding a past
+`entry_count` trips C2+C3; deleting a middle declaration trips C2; editing, truncating or
+deleting a committed operator file trips C4. Run them with `pip install pytest && pytest tests`.
 
 ## Current board
 

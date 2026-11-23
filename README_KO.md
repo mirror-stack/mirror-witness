@@ -69,7 +69,7 @@ python declare.py --operator <당신> --ledger <라벨> --from-anchor path/to/an
 | **C3 단조성** | 한 원장의 `entry_count`가 선언들 사이에서 결코 줄지 않는지 (시계 되감기) |
 | **C4 append-only** | (PR diff) 이미 커밋된 선언이 수정·삭제되지 않았는지 — 오직 추가만 |
 
-적대적 테스트 통과: 과거 `entry_count`를 되감으면 C2+C3에 걸리고, 중간 선언을 지우면 C2에 걸립니다.
+적대적 테스트([`tests/`](tests/test_witness_verify.py), CI에서 실행): 과거 `entry_count`를 되감으면 C2+C3, 중간 선언을 지우면 C2, 커밋된 운영자 파일을 고치거나 자르거나 지우면 C4에 걸립니다. 실행: `pip install pytest && pytest tests`.
 
 ## 현재 게시판
 
