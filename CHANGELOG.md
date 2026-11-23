@@ -13,6 +13,18 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [Unreleased]
+
+- **Fix (C4):** deleting a whole `ledger_heads/<operator>.jsonl` file in a PR passed the
+  append-only check, because C4 only walked files that still existed. It now also lists the
+  files in the base revision and fails on a deleted one.
+- **Tests:** `tests/test_witness_verify.py` (11 tests). Until now the README said "adversarial
+  tests pass" with no tests in the repo. They cover C1–C4, `declare.py` round-trip, and the
+  legacy 16-hex seal rule. CI runs them on every PR that touches the scripts or the board.
+- Removed committed `__pycache__/*.pyc` (built by CPython 3.10, not source) and added
+  `.gitignore`.
+- Still no `pyproject.toml`, for the reason above. The tests need only `pytest`.
+
 ## [0.1.0] — 2026-08-05
 
 First declared version. The hub has been in use before this point; this entry
